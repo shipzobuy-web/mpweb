@@ -59,7 +59,7 @@ export default function GuildDashboard({ session, guild, moduleSettings }: Guild
             colorScheme="brand.blue"
             onClick={() =>
               window.open(
-                `https://discord.com/api/oauth2/authorize?client_id=${process.env.NEXT_PUBLIC_CLIENT_ID}&permissions=8&scope=bot%20applications.commands`,
+                `https://discord.com/api/oauth2/authorize?client_id=969263464050741368&permissions=8&scope=bot%20applications.commands`,
                 "_blank"
               )
             }
@@ -164,3 +164,4 @@ export const getServerSideProps = async (ctx) => {
     }
   }
 }
+
