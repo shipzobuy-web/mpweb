@@ -1,14 +1,20 @@
 import { Box, Button, Flex, Icon, Text } from "@chakra-ui/react"
 import { getSession } from "next-auth/client"
 import BaseLayout from "../../../components/BaseLayout"
-import { FetchBotGuilds } from "../../../lib/DbUtils"
 import { Modules } from "../../../lib/Modules"
 import { FaCheck, FaChessRook, FaDatabase, FaFish, FaHammer, FaHandPaper, FaMailBulk } from "react-icons/fa"
 import Switch from "react-switch"
-import api from "../../../lib/api"
 import { useState } from "react"
+import api from "../../../lib/api"
 
-export default function GuildDashboard({ session, guild, moduleSettings }) {
+type GuildToggleProps = {
+  session: any
+  guild: any
+  moduleSettings: Record<string, any>
+}
+
+export default function GuildDashboard({ session, guild, moduleSettings }: GuildToggleProps) {
+  // Component to display each module toggle
   const ModuleBox = ({ moduleName, module, modStatus, icon }) => {
     const [status, setStatus] = useState(modStatus)
 
@@ -23,13 +29,14 @@ export default function GuildDashboard({ session, guild, moduleSettings }) {
         direction="column"
       >
         <Icon as={icon} position="absolute" fontSize="8vw" top="-15px" right="10px" opacity={0.3} />
+
         <Flex alignItems="center" justifyContent="space-between" wrap="wrap">
           <Text fontSize="1.5vw">{moduleName || module}</Text>
           <Switch
             checked={status}
             onChange={async () => {
               const newStatus = await api("/modules/toggle", "POST", {
-                guild: guild.id, // use Discord guild ID
+                guild: guild.id, // use guild.id from Discord session
                 module: module
               })
               setStatus(newStatus.status)
@@ -40,19 +47,20 @@ export default function GuildDashboard({ session, guild, moduleSettings }) {
     )
   }
 
-  // If bot isn't in guild, show invite
+  // If the bot is not in the guild
   if (!guild) {
     return (
-      <BaseLayout pageTitle={"Bot not in Guild"}>
+      <BaseLayout pageTitle="Bot not in Guild">
         <Flex alignItems="center" justifyContent="center" direction="column">
           <Text fontSize="2.5vw" textAlign="center">
-            {"To access this guild's Dashboard, you must invite it in the server!"}
+            To access this guild's Dashboard, you must invite it in the server!
           </Text>
           <Button
             colorScheme="brand.blue"
             onClick={() =>
               window.open(
-                `https://discord.com/api/oauth2/authorize?client_id=${process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID}&permissions=8&scope=bot%20applications.commands`
+                `https://discord.com/api/oauth2/authorize?client_id=${process.env.NEXT_PUBLIC_CLIENT_ID}&permissions=8&scope=bot%20applications.commands`,
+                "_blank"
               )
             }
             h="60px"
@@ -66,7 +74,7 @@ export default function GuildDashboard({ session, guild, moduleSettings }) {
     )
   }
 
-  // Bot is in guild
+  // Render the dashboard if the bot is in the guild
   return (
     <BaseLayout pageTitle={guild.name} navGuild={guild}>
       <Flex p={5} justifyContent="center" gap={10} wrap="wrap">
@@ -114,30 +122,45 @@ export default function GuildDashboard({ session, guild, moduleSettings }) {
   )
 }
 
+// SERVER-SIDE PROPS
 export const getServerSideProps = async (ctx) => {
   const session = await getSession(ctx)
   const { guildId } = ctx.query
 
+  // redirect if no session
   if (!session) {
-    return { redirect: { destination: "/login", permanent: false } }
+    return {
+      redirect: {
+        destination: "/login",
+        permanent: false
+      }
+    }
   }
 
-  // Check user has access
+  // find the guild in the user's Discord session
   const userGuild = session.guilds.find((g) => g.id === guildId)
-  if (!userGuild) {
-    return { redirect: { destination: "/login", permanent: false } }
+  const botGuild = userGuild?.bot ? userGuild : null // bot present only if userGuild.bot === true
+
+  // if the bot is not in the guild, guild will be null
+  if (!botGuild) {
+    return {
+      props: {
+        session,
+        guild: null,
+        moduleSettings: {}
+      }
+    }
   }
 
-  const botGuilds = await FetchBotGuilds()
+  // fetch module settings for this guild from your database
+  const moduleManager = new Modules(botGuild.id)
+  const moduleSettings = await moduleManager.get()
 
-  // Use Discord ID consistently
-  const guild = botGuilds.find((g) => g.id === guildId) || null
-
-  let moduleSettings = {}
-  if (guild) {
-    const module = new Modules(guild.id) // pass Discord ID
-    moduleSettings = await module.get()
+  return {
+    props: {
+      session,
+      guild: botGuild,
+      moduleSettings
+    }
   }
-
-  return { props: { session, guild, moduleSettings } }
 }
