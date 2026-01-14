@@ -1,31 +1,36 @@
 import { MongoClient, MongoNotConnectedError } from "mongodb"
-import Config from "../config.json"
 
-export const client = new MongoClient(Config.mongoUri)
-client.connect()
-console.log(client.listenerCount())
-console.log("Connected to Database")
+const uri = process.env.MONGODB_URI as string
 
-async function Execute(__f) {
-    try {
+let client: MongoClient | null = null
 
-        const returnable = await __f(client)
-
-        return returnable
-    } catch (e) {
-        //throw new Error(e)
-        if (e instanceof MongoNotConnectedError) {
-            await client.connect()
-            return Execute(__f)
-        }
-        else {
-            throw new Error(e)
-        }
+async function getClient() {
+  if (!client) {
+    if (!uri) {
+      throw new Error("MONGODB_URI is not defined")
     }
+    client = new MongoClient(uri)
+    await client.connect()
+    console.log("Connected to Database")
+  }
+  return client
+}
+
+async function Execute(__f: (client: MongoClient) => Promise<any>) {
+  try {
+    const dbClient = await getClient()
+    return await __f(dbClient)
+  } catch (e) {
+    if (e instanceof MongoNotConnectedError) {
+      client = null
+      return Execute(__f)
+    }
+    throw e
+  }
 }
 
 const Database = {
-    Execute,
+  Execute,
 }
 
 export default Database
