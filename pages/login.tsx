@@ -1,14 +1,14 @@
 import { AbsoluteCenter, Button, Flex, Heading } from "@chakra-ui/react";
-import { signIn } from "next-auth/react";
+import { signIn } from "next-auth/client"; // <-- v3 import
 import BaseLayout from "../components/BaseLayout";
 import { FaDiscord } from "react-icons/fa";
+import { useState } from "react";
 
 export default function SignIn() {
-  const [isLoading, setLoading] = React.useState(false);
+  const [isLoading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     setLoading(true);
-    // Uses NextAuth v4 redirect handling
     await signIn("discord", {
       callbackUrl: "/dashboard", // redirect after login
     });
