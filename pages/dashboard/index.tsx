@@ -40,7 +40,7 @@ export default function DashboardIndex({ session, botGuildIds }) {
                                         hasBot
                                             ? router.push(`/dashboard/${guild.id}`)
                                             : window.open(
-                                                  `https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=8&scope=bot%20applications.commands`
+                                                  `https://discord.com/api/oauth2/authorize?client_id=969263464050741368&permissions=8&scope=bot%20applications.commands`
                                               )
                                     }
                                 >
@@ -82,3 +82,4 @@ export const getServerSideProps = async (ctx) => {
         }
     }
 }
+
