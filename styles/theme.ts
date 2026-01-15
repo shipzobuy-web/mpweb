@@ -35,7 +35,9 @@ export const colors = {
 }
 
 const fonts = {
-    body: "Poppins"
+  heading: "Poppins, sans-serif",
+  body: "Poppins, sans-serif",
+  mono: "Poppins, monospace",
 }
 
 const config: ThemeConfig = {
@@ -74,5 +76,6 @@ const theme = extendTheme({
     colors,
     config
 })
+
 
 export default theme
